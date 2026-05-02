@@ -14,8 +14,8 @@ import { Route as PantryIndexRouteImport } from './routes/pantry/index'
 import { Route as GroceryIndexRouteImport } from './routes/grocery/index'
 import { Route as PantryItemIdRouteImport } from './routes/pantry/$itemId'
 import { Route as GroceryListIdRouteImport } from './routes/grocery/$listId'
-import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -43,14 +43,14 @@ const GroceryListIdRoute = GroceryListIdRouteImport.update({
   path: '/grocery/$listId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthSignUpRoute = AuthSignUpRouteImport.update({
-  id: '/auth/sign-up',
-  path: '/auth/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthSignInRoute = AuthSignInRouteImport.update({
   id: '/auth/sign-in',
   path: '/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -61,8 +61,8 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/sign-in': typeof AuthSignInRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
   '/grocery/$listId': typeof GroceryListIdRoute
   '/pantry/$itemId': typeof PantryItemIdRoute
   '/grocery/': typeof GroceryIndexRoute
@@ -71,8 +71,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/sign-in': typeof AuthSignInRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
   '/grocery/$listId': typeof GroceryListIdRoute
   '/pantry/$itemId': typeof PantryItemIdRoute
   '/grocery': typeof GroceryIndexRoute
@@ -82,8 +82,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/sign-in': typeof AuthSignInRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
   '/grocery/$listId': typeof GroceryListIdRoute
   '/pantry/$itemId': typeof PantryItemIdRoute
   '/grocery/': typeof GroceryIndexRoute
@@ -94,8 +94,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin/users'
     | '/auth/sign-in'
-    | '/auth/sign-up'
     | '/grocery/$listId'
     | '/pantry/$itemId'
     | '/grocery/'
@@ -104,8 +104,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/users'
     | '/auth/sign-in'
-    | '/auth/sign-up'
     | '/grocery/$listId'
     | '/pantry/$itemId'
     | '/grocery'
@@ -114,8 +114,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin/users'
     | '/auth/sign-in'
-    | '/auth/sign-up'
     | '/grocery/$listId'
     | '/pantry/$itemId'
     | '/grocery/'
@@ -125,8 +125,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AuthSignInRoute: typeof AuthSignInRoute
-  AuthSignUpRoute: typeof AuthSignUpRoute
   GroceryListIdRoute: typeof GroceryListIdRoute
   PantryItemIdRoute: typeof PantryItemIdRoute
   GroceryIndexRoute: typeof GroceryIndexRoute
@@ -171,18 +171,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroceryListIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/sign-up': {
-      id: '/auth/sign-up'
-      path: '/auth/sign-up'
-      fullPath: '/auth/sign-up'
-      preLoaderRoute: typeof AuthSignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/sign-in': {
       id: '/auth/sign-in'
       path: '/auth/sign-in'
       fullPath: '/auth/sign-in'
       preLoaderRoute: typeof AuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -197,8 +197,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AuthSignInRoute: AuthSignInRoute,
-  AuthSignUpRoute: AuthSignUpRoute,
   GroceryListIdRoute: GroceryListIdRoute,
   PantryItemIdRoute: PantryItemIdRoute,
   GroceryIndexRoute: GroceryIndexRoute,

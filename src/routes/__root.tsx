@@ -56,6 +56,15 @@ function RootLayout() {
               >
                 Grocery
               </Link>
+              {session.user.role === 'admin' && (
+                <Link
+                  to="/admin/users"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  activeProps={{ className: 'text-foreground font-medium' }}
+                >
+                  Admin
+                </Link>
+              )}
             </>
           )}
         </nav>

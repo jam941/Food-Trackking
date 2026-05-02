@@ -16,9 +16,12 @@ pnpm db:generate  # Generate Drizzle migrations from schema changes
 pnpm db:migrate   # Apply pending migrations to the database
 pnpm db:studio    # Open Drizzle Studio (visual DB browser)
 pnpm db:push      # Push schema directly (skip migration files — dev only)
+pnpm db:seed-admin  # Create or reset the bootstrap admin account (admin@admin.com / admin)
 ```
 
 **Required before first run:** `pnpm db:up && pnpm db:migrate`
+
+**First admin setup:** Run `pnpm db:seed-admin` to create the bootstrap admin (`admin@admin.com` / `admin`). Sign in, create your real account at `/admin/users`, promote it to admin, sign in as your real account, then delete the bootstrap row. Re-running the seed at any time resets the bootstrap account's password back to `admin`.
 
 **Note:** Docker Desktop must be installed for `db:up`. Alternative: set `DATABASE_URL` in `.env.local` to a hosted Postgres (Neon free tier works).
 

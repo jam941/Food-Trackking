@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useRouter } from '@tanstack/react-router'
+import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { authClient } from '#/lib/auth-client'
@@ -89,10 +89,7 @@ function SignInPage() {
               )}
             </form.Subscribe>
             <p className="text-center text-sm text-muted-foreground">
-              No account?{' '}
-              <Link to="/auth/sign-up" className="underline hover:text-foreground">
-                Sign up
-              </Link>
+              Accounts are invite-only — ask the admin.
             </p>
           </form>
         </CardContent>
