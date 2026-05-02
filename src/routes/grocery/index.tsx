@@ -13,13 +13,14 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { ClientOnly } from '#/components/ClientOnly'
 
 export const Route = createFileRoute('/grocery/')({
   beforeLoad: async () => {
     const session = await getSessionFn()
     if (!session) throw redirect({ to: '/auth/sign-in' })
   },
-  component: GroceryPage,
+  component: () => <ClientOnly><GroceryPage /></ClientOnly>,
 })
 
 function GroceryPage() {

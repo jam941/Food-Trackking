@@ -78,7 +78,15 @@ function SignUpPage() {
                 </div>
               )}
             </form.Field>
-            <form.Field name="password">
+            <form.Field
+              name="password"
+              validators={{
+                onChange: ({ value }) =>
+                  value.length > 0 && value.length < 4
+                    ? 'Password must be at least 4 characters'
+                    : undefined,
+              }}
+            >
               {(field) => (
                 <div className="space-y-1">
                   <Label htmlFor="password">Password</Label>
@@ -89,6 +97,9 @@ function SignUpPage() {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                   />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                  )}
                 </div>
               )}
             </form.Field>

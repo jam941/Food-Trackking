@@ -12,13 +12,14 @@ import { Separator } from '#/components/ui/separator'
 import ScanSheet from '#/components/pantry/ScanSheet'
 import { UNIT_LABELS } from '#/lib/units'
 import type { Unit } from '#/lib/units'
+import { ClientOnly } from '#/components/ClientOnly'
 
 export const Route = createFileRoute('/pantry/')({
   beforeLoad: async () => {
     const session = await getSessionFn()
     if (!session) throw redirect({ to: '/auth/sign-in' })
   },
-  component: PantryPage,
+  component: () => <ClientOnly><PantryPage /></ClientOnly>,
 })
 
 function expiryBadge(expiresAt: Date | null) {

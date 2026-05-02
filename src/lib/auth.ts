@@ -1,3 +1,4 @@
+import '@tanstack/react-start/server-only'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
@@ -16,6 +17,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 4,
   },
   plugins: [tanstackStartCookies()],
 })

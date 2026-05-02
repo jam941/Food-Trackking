@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Badge } from '#/components/ui/badge'
 import { pantryCollection } from '#/db-collections'
 import { getSessionFn } from '#/server/session'
+import { ClientOnly } from '#/components/ClientOnly'
 
 export const Route = createFileRoute('/')({
   beforeLoad: async () => {
@@ -11,7 +12,7 @@ export const Route = createFileRoute('/')({
     if (!session) throw redirect({ to: '/auth/sign-in' })
     return { session }
   },
-  component: Dashboard,
+  component: () => <ClientOnly><Dashboard /></ClientOnly>,
 })
 
 function Dashboard() {
