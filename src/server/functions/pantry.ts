@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { db } from '#/db'
 import { food, pantryItem } from '#/db/schema'
+import type { NutritionPer100g } from '#/db/schema'
 import { requireSession } from '#/server/session'
 import { UNITS } from '#/lib/units'
 import { CreateFoodSchema } from './food'
@@ -33,6 +34,7 @@ export type PantryItemWithFood = {
   foodBrand: string | null
   foodImageUrl: string | null
   foodBarcode: string | null
+  foodNutritionPer100g: NutritionPer100g | null
 }
 
 export const listPantry = createServerFn().handler(async () => {
@@ -53,6 +55,7 @@ export const listPantry = createServerFn().handler(async () => {
       foodBrand: food.brand,
       foodImageUrl: food.imageUrl,
       foodBarcode: food.barcode,
+      foodNutritionPer100g: food.nutritionPer100g,
     })
     .from(pantryItem)
     .innerJoin(food, eq(pantryItem.foodId, food.id))

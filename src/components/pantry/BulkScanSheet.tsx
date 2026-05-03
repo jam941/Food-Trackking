@@ -24,6 +24,7 @@ import { commitBulkAdd } from '#/server/functions/pantry'
 import { queryClient } from '#/integrations/tanstack-query/root-provider'
 import type { Food, NutritionPer100g } from '#/db/schema'
 import UnpackConfigDialog from './UnpackConfigDialog'
+import FoodInfoPanel from './FoodInfoPanel'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -818,64 +819,11 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
 
               {/* Info sub-panel */}
               {expandedKey === row.key && row.source !== 'manual' && (
-                <div className="mt-2 pt-2 border-t text-xs space-y-2">
-                  {row.food.barcode && (
-                    <p className="text-muted-foreground font-mono">{row.food.barcode}</p>
-                  )}
-                  {row.food.nutritionPer100g ? (
-                    <div>
-                      <p className="font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                        Per 100g
-                      </p>
-                      <div className="space-y-0.5">
-                        {row.food.nutritionPer100g.kcal != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Energy</span>
-                            <span>{row.food.nutritionPer100g.kcal} kcal</span>
-                          </div>
-                        )}
-                        {row.food.nutritionPer100g.protein != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Protein</span>
-                            <span>{row.food.nutritionPer100g.protein}g</span>
-                          </div>
-                        )}
-                        {row.food.nutritionPer100g.carbs != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Carbs</span>
-                            <span>{row.food.nutritionPer100g.carbs}g</span>
-                          </div>
-                        )}
-                        {row.food.nutritionPer100g.fat != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Fat</span>
-                            <span>{row.food.nutritionPer100g.fat}g</span>
-                          </div>
-                        )}
-                        {row.food.nutritionPer100g.sugar != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Sugar</span>
-                            <span>{row.food.nutritionPer100g.sugar}g</span>
-                          </div>
-                        )}
-                        {row.food.nutritionPer100g.fiber != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Fiber</span>
-                            <span>{row.food.nutritionPer100g.fiber}g</span>
-                          </div>
-                        )}
-                        {row.food.nutritionPer100g.salt != null && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Salt</span>
-                            <span>{row.food.nutritionPer100g.salt}g</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No nutrition data</p>
-                  )}
-                </div>
+                <FoodInfoPanel
+                  className="mt-2 pt-2 border-t"
+                  barcode={row.food.barcode}
+                  nutrition={row.food.nutritionPer100g}
+                />
               )}
             </div>
           ))}

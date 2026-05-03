@@ -9,7 +9,14 @@ import type { PantryItemWithFood } from '#/server/functions/pantry'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '#/components/ui/sheet'
 import BulkScanSheet from '#/components/pantry/BulkScanSheet'
+import FoodInfoPanel from '#/components/pantry/FoodInfoPanel'
 import { UNIT_LABELS } from '#/lib/units'
 import type { Unit } from '#/lib/units'
 import { ClientOnly } from '#/components/ClientOnly'
@@ -49,6 +56,7 @@ function groupByLocation(items: PantryItemWithFood[]): Partial<Record<LocationKe
 
 function PantryPage() {
   const [scanOpen, setScanOpen] = useState(false)
+  const [infoItem, setInfoItem] = useState<PantryItemWithFood | null>(null)
   const { data: items = [] } = useLiveQuery(pantryCollection)
 
   async function handleDelete(id: string, name: string) {
@@ -91,35 +99,44 @@ function PantryPage() {
               {group.map((item, i) => (
                 <div key={item.id}>
                   {i > 0 && <Separator />}
-                  <div className="flex items-center gap-3 py-3">
-                    {item.foodImageUrl && (
-                      <img
-                        src={item.foodImageUrl}
-                        alt=""
-                        className="h-10 w-10 object-contain rounded flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.foodName}</p>
-                      {item.foodBrand && (
-                        <p className="text-xs text-muted-foreground">{item.foodBrand}</p>
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => setInfoItem(item)}
+                  >
+                    <div className="flex items-center gap-3 py-3">
+                      {item.foodImageUrl && (
+                        <img
+                          src={item.foodImageUrl}
+                          alt=""
+                          className="h-10 w-10 object-contain rounded flex-shrink-0"
+                        />
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        {item.quantity} {UNIT_LABELS[item.unit as Unit]}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{item.foodName}</p>
+                        {item.foodBrand && (
+                          <p className="text-xs text-muted-foreground">{item.foodBrand}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {item.quantity} {UNIT_LABELS[item.unit as Unit]}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {expiryBadge(item.expiresAt)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void handleDelete(item.id, item.foodName)
+                          }}
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {expiryBadge(item.expiresAt)}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"
-                        onClick={() => void handleDelete(item.id, item.foodName)}
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                  </div>
+                  </button>
                 </div>
               ))}
             </div>
@@ -131,6 +148,34 @@ function PantryPage() {
         open={scanOpen}
         onOpenChange={setScanOpen}
       />
+
+      <Sheet open={infoItem !== null} onOpenChange={(o) => { if (!o) setInfoItem(null) }}>
+        <SheetContent side="bottom" className="pb-8">
+          <SheetHeader>
+            <div className="flex items-center gap-3">
+              {infoItem?.foodImageUrl && (
+                <img
+                  src={infoItem.foodImageUrl}
+                  alt=""
+                  className="h-10 w-10 object-contain rounded flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <SheetTitle className="truncate">{infoItem?.foodName}</SheetTitle>
+                {infoItem?.foodBrand && (
+                  <p className="text-xs text-muted-foreground truncate">{infoItem.foodBrand}</p>
+                )}
+              </div>
+            </div>
+          </SheetHeader>
+          <div className="mt-4">
+            <FoodInfoPanel
+              barcode={infoItem?.foodBarcode}
+              nutrition={infoItem?.foodNutritionPer100g}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
