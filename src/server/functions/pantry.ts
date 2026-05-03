@@ -35,6 +35,7 @@ export type PantryItemWithFood = {
   foodImageUrl: string | null
   foodBarcode: string | null
   foodNutritionPer100g: NutritionPer100g | null
+  foodTags: string[]
 }
 
 export const listPantry = createServerFn().handler(async () => {
@@ -56,6 +57,7 @@ export const listPantry = createServerFn().handler(async () => {
       foodImageUrl: food.imageUrl,
       foodBarcode: food.barcode,
       foodNutritionPer100g: food.nutritionPer100g,
+      foodTags: food.tags,
     })
     .from(pantryItem)
     .innerJoin(food, eq(pantryItem.foodId, food.id))

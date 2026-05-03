@@ -29,6 +29,13 @@
       "when": 1777749271015,
       "tag": "0003_safe_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777838005181,
+      "tag": "0004_glorious_magik",
+      "breakpoints": true
     }
   ]
 }

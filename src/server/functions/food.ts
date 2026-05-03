@@ -7,6 +7,7 @@ import type { NewFood } from '#/db/schema'
 import { lookupBarcode } from '#/server/off'
 import { requireSession } from '#/server/session'
 import { UNITS } from '#/lib/units'
+import { mapOFFTags, normalizeTag } from '#/lib/tags'
 
 const UnitSchema = z.enum(UNITS)
 
@@ -30,6 +31,7 @@ export const CreateFoodSchema = z.object({
     .optional(),
   externalSource: z.string().optional(),
   externalRef: z.string().optional(),
+  tags: z.array(z.string().min(1)).max(50).optional(),
 })
 
 export const listFoods = createServerFn().handler(async () => {
@@ -104,6 +106,7 @@ export const findOrPrepareFoodForBarcode = createServerFn()
           nutritionPer100g: offProduct.nutritionPer100g,
           externalSource: 'open_food_facts',
           externalRef: barcode,
+          tags: mapOFFTags(offProduct.categories),
         },
       }
     }
@@ -187,4 +190,18 @@ export const setFoodUnpack = createServerFn({ method: 'POST' })
       .returning()
 
     return updated
+  })
+
+export const updateFoodTags = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.string(), tags: z.array(z.string().min(1)).max(50) }))
+  .handler(async ({ data: { id, tags } }) => {
+    const session = await requireSession()
+    const cleaned = Array.from(new Set(tags.map(normalizeTag).filter(Boolean)))
+    const [item] = await db
+      .update(food)
+      .set({ tags: cleaned, updatedAt: new Date() })
+      .where(and(eq(food.id, id), eq(food.userId, session.user.id)))
+      .returning()
+    if (!item) throw new Error('Food not found')
+    return item
   })

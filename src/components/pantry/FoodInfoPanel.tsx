@@ -1,18 +1,21 @@
 import { cn } from '#/lib/utils'
 import { Badge } from '#/components/ui/badge'
 import type { NutritionPer100g } from '#/db/schema'
+import FoodTagsEditor from '#/components/pantry/FoodTagsEditor'
 
 type Props = {
   barcode?: string | null
   nutrition?: NutritionPer100g | null
   className?: string
+  foodId?: string
+  tags?: string[]
 }
 
-export default function FoodInfoPanel({ barcode, nutrition, className }: Props) {
+export default function FoodInfoPanel({ barcode, nutrition, className, foodId, tags }: Props) {
   const hasNutrition =
     nutrition != null &&
     Object.keys(nutrition).length > 0
-  const hasContent = barcode || hasNutrition
+  const hasContent = barcode || hasNutrition || !!foodId
 
   if (!hasContent) {
     return (
@@ -42,6 +45,12 @@ export default function FoodInfoPanel({ barcode, nutrition, className }: Props) 
 
   return (
     <div className={cn('space-y-2', className)}>
+      {foodId && tags && (
+        <div className="mb-3">
+          <FoodTagsEditor foodId={foodId} tags={tags} />
+        </div>
+      )}
+
       {barcode && (
         <p className="font-mono text-xs text-muted-foreground">{barcode}</p>
       )}

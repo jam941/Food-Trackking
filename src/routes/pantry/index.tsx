@@ -1,14 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useLiveQuery } from '@tanstack/react-db'
-import { useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { getSessionFn } from '#/server/session'
 import { deletePantryItem } from '#/server/functions/pantry'
 import { pantryCollection } from '#/db-collections'
 import type { PantryItemWithFood } from '#/server/functions/pantry'
-import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { Separator } from '#/components/ui/separator'
+import { Input } from '#/components/ui/input'
 import {
   Sheet,
   SheetContent,
@@ -17,8 +16,11 @@ import {
 } from '#/components/ui/sheet'
 import BulkScanSheet from '#/components/pantry/BulkScanSheet'
 import FoodInfoPanel from '#/components/pantry/FoodInfoPanel'
-import { UNIT_LABELS } from '#/lib/units'
-import type { Unit } from '#/lib/units'
+import { PantryFilters } from '#/components/pantry/PantryFilters'
+import { VirtualPantryList } from '#/components/pantry/VirtualPantryList'
+import type { PantryRow } from '#/components/pantry/VirtualPantryList'
+import { applyFilters, emptyFilters } from '#/lib/pantry-filters'
+import type { FilterState, LocationKey } from '#/lib/pantry-filters'
 import { ClientOnly } from '#/components/ClientOnly'
 
 export const Route = createFileRoute('/pantry/')({
@@ -29,35 +31,61 @@ export const Route = createFileRoute('/pantry/')({
   component: () => <ClientOnly><PantryPage /></ClientOnly>,
 })
 
-function expiryBadge(expiresAt: Date | null) {
-  if (!expiresAt) return null
-  const days = Math.ceil(
-    (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-  )
-  if (days < 0) return <Badge variant="destructive">Expired</Badge>
-  if (days <= 3) return <Badge className="bg-orange-500">Exp {days}d</Badge>
-  return (
-    <Badge variant="outline" className="text-muted-foreground">
-      Exp {new Date(expiresAt).toLocaleDateString()}
-    </Badge>
-  )
-}
-
-type LocationKey = 'pantry' | 'fridge' | 'freezer' | 'other'
-
-function groupByLocation(items: PantryItemWithFood[]): Partial<Record<LocationKey, PantryItemWithFood[]>> {
-  const result: Partial<Record<LocationKey, PantryItemWithFood[]>> = {}
-  for (const item of items) {
-    const key = (item.location ?? 'pantry') as LocationKey
-    ;(result[key] ??= []).push(item)
-  }
-  return result
-}
+const LOCATION_ORDER: LocationKey[] = ['fridge', 'freezer', 'pantry', 'other']
 
 function PantryPage() {
   const [scanOpen, setScanOpen] = useState(false)
   const [infoItem, setInfoItem] = useState<PantryItemWithFood | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filters, setFilters] = useState<FilterState>(emptyFilters())
+  const [searchInput, setSearchInput] = useState('')
+  const deferredQuery = useDeferredValue(searchInput)
   const { data: items = [] } = useLiveQuery(pantryCollection)
+
+  const activeFilters = useMemo<FilterState>(
+    () => ({ ...filters, query: deferredQuery }),
+    [filters, deferredQuery],
+  )
+
+  const availableTags = useMemo(
+    () => Array.from(new Set(items.flatMap((i) => i.foodTags))).sort(),
+    [items],
+  )
+
+  const availableLocations = useMemo<LocationKey[]>(
+    () =>
+      LOCATION_ORDER.filter((loc) =>
+        items.some((i) => (i.location ?? 'pantry') === loc),
+      ),
+    [items],
+  )
+
+  const filteredItems = useMemo(
+    () => applyFilters(items, activeFilters),
+    [items, activeFilters],
+  )
+
+  const rows = useMemo<PantryRow[]>(() => {
+    const result: PantryRow[] = []
+    for (const loc of LOCATION_ORDER) {
+      const group = filteredItems.filter(
+        (i) => (i.location ?? 'pantry') === loc,
+      )
+      if (!group.length) continue
+      result.push({ type: 'header', loc, count: group.length })
+      for (const item of group) result.push({ type: 'item', data: item })
+    }
+    return result
+  }, [filteredItems])
+
+  const activeFilterCount = useMemo(
+    () =>
+      (deferredQuery ? 1 : 0) +
+      filters.locations.size +
+      filters.statusFlags.size +
+      filters.tags.size,
+    [deferredQuery, filters],
+  )
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Remove ${name} from pantry?`)) return
@@ -69,87 +97,82 @@ function PantryPage() {
     }
   }
 
-  const byLocation = groupByLocation(items)
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Pantry</h1>
-        <Button onClick={() => setScanOpen(true)} size="sm">
-          + Scan
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFiltersOpen(true)}
+          >
+            Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+          </Button>
+          <Button onClick={() => setScanOpen(true)} size="sm">
+            + Scan
+          </Button>
+        </div>
       </div>
+
+      <Input
+        placeholder="Search pantry…"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        className="w-full"
+      />
 
       {items.length === 0 && (
         <div className="text-center py-16 text-muted-foreground space-y-2">
           <p className="text-lg">Your pantry is empty</p>
-          <p className="text-sm">Tap <strong>+ Scan</strong> to scan a barcode and add your first item.</p>
+          <p className="text-sm">
+            Tap <strong>+ Scan</strong> to scan a barcode and add your first item.
+          </p>
         </div>
       )}
 
-      {(['fridge', 'freezer', 'pantry', 'other'] as const).map((loc) => {
-        const group = byLocation[loc]
-        if (!group?.length) return null
-        return (
-          <section key={loc}>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 capitalize">
-              {loc}
-            </h2>
-            <div className="space-y-px">
-              {group.map((item, i) => (
-                <div key={item.id}>
-                  {i > 0 && <Separator />}
-                  <button
-                    type="button"
-                    className="w-full text-left"
-                    onClick={() => setInfoItem(item)}
-                  >
-                    <div className="flex items-center gap-3 py-3">
-                      {item.foodImageUrl && (
-                        <img
-                          src={item.foodImageUrl}
-                          alt=""
-                          className="h-10 w-10 object-contain rounded flex-shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.foodName}</p>
-                        {item.foodBrand && (
-                          <p className="text-xs text-muted-foreground">{item.foodBrand}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {item.quantity} {UNIT_LABELS[item.unit as Unit]}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {expiryBadge(item.expiresAt)}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void handleDelete(item.id, item.foodName)
-                          }}
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )
-      })}
+      {items.length > 0 && filteredItems.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground space-y-2">
+          <p>No items match your filters.</p>
+          <button
+            type="button"
+            className="text-sm underline"
+            onClick={() => {
+              setFilters(emptyFilters())
+              setSearchInput('')
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
 
-      <BulkScanSheet
-        open={scanOpen}
-        onOpenChange={setScanOpen}
+      {rows.length > 0 && (
+        <VirtualPantryList
+          rows={rows}
+          onItemClick={setInfoItem}
+          onItemDelete={handleDelete}
+        />
+      )}
+
+      <PantryFilters
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        value={filters}
+        onChange={setFilters}
+        onClearSearch={() => setSearchInput('')}
+        availableTags={availableTags}
+        availableLocations={availableLocations}
       />
 
-      <Sheet open={infoItem !== null} onOpenChange={(o) => { if (!o) setInfoItem(null) }}>
+      <BulkScanSheet open={scanOpen} onOpenChange={setScanOpen} />
+
+      <Sheet
+        open={infoItem !== null}
+        onOpenChange={(o) => {
+          if (!o) setInfoItem(null)
+        }}
+      >
         <SheetContent side="bottom" className="pb-8">
           <SheetHeader>
             <div className="flex items-center gap-3">
@@ -163,15 +186,20 @@ function PantryPage() {
               <div className="min-w-0">
                 <SheetTitle className="truncate">{infoItem?.foodName}</SheetTitle>
                 {infoItem?.foodBrand && (
-                  <p className="text-xs text-muted-foreground truncate">{infoItem.foodBrand}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {infoItem.foodBrand}
+                  </p>
                 )}
               </div>
             </div>
           </SheetHeader>
           <div className="mt-4">
             <FoodInfoPanel
+              key={infoItem?.foodId ?? ''}
               barcode={infoItem?.foodBarcode}
               nutrition={infoItem?.foodNutritionPer100g}
+              foodId={infoItem?.foodId}
+              tags={infoItem?.foodTags}
             />
           </div>
         </SheetContent>

@@ -133,6 +133,7 @@ export const food = pgTable(
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
     unpacksToFoodId: text('unpacks_to_food_id').references((): any => food.id, { onDelete: 'set null' }),
     unpackCount: integer('unpack_count'),
+    tags: text('tags').array().notNull().default(sql`ARRAY[]::text[]`),
   },
   (t) => [
     // Same barcode can only appear once per user; nulls excluded so manual foods don't conflict.
