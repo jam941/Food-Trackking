@@ -1,0 +1,1 @@
+ALTER TABLE "food" ADD CONSTRAINT "food_unpack_consistency" CHECK (("food"."unpacks_to_food_id" IS NULL) = ("food"."unpack_count" IS NULL) AND ("food"."unpack_count" IS NULL OR "food"."unpack_count" > 0));

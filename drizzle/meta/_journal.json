@@ -15,6 +15,20 @@
       "when": 1777738268148,
       "tag": "0001_wet_firebird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777749140295,
+      "tag": "0002_add_food_unpack_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777749271015,
+      "tag": "0003_safe_invaders",
+      "breakpoints": true
     }
   ]
 }

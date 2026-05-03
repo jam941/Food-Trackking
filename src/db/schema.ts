@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -130,6 +131,8 @@ export const food = pgTable(
     externalRef: text('external_ref'),       // the original barcode, preserved even if user renames
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    unpacksToFoodId: text('unpacks_to_food_id').references((): any => food.id, { onDelete: 'set null' }),
+    unpackCount: integer('unpack_count'),
   },
   (t) => [
     // Same barcode can only appear once per user; nulls excluded so manual foods don't conflict.
@@ -137,6 +140,10 @@ export const food = pgTable(
       .on(t.userId, t.barcode)
       .where(sql`${t.barcode} IS NOT NULL`),
     index('food_user_id_idx').on(t.userId),
+    check(
+      'food_unpack_consistency',
+      sql`(${t.unpacksToFoodId} IS NULL) = (${t.unpackCount} IS NULL) AND (${t.unpackCount} IS NULL OR ${t.unpackCount} > 0)`
+    ),
   ],
 )
 

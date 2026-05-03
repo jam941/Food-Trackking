@@ -9,7 +9,7 @@ import type { PantryItemWithFood } from '#/server/functions/pantry'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
-import ScanSheet from '#/components/pantry/ScanSheet'
+import BulkScanSheet from '#/components/pantry/BulkScanSheet'
 import { UNIT_LABELS } from '#/lib/units'
 import type { Unit } from '#/lib/units'
 import { ClientOnly } from '#/components/ClientOnly'
@@ -105,7 +105,7 @@ function PantryPage() {
                         <p className="text-xs text-muted-foreground">{item.foodBrand}</p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {item.quantity} {UNIT_LABELS[item.unit as Unit] ?? item.unit}
+                        {item.quantity} {UNIT_LABELS[item.unit as Unit]}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -127,12 +127,9 @@ function PantryPage() {
         )
       })}
 
-      <ScanSheet
+      <BulkScanSheet
         open={scanOpen}
         onOpenChange={setScanOpen}
-        onAdded={() => {
-          // TanStack DB invalidates automatically
-        }}
       />
     </div>
   )
