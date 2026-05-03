@@ -15,7 +15,7 @@ import { Checkbox } from '#/components/ui/checkbox'
 import { Label } from '#/components/ui/label'
 import { Separator } from '#/components/ui/separator'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UNIT_LABELS } from '#/lib/units'
+import { UNIT_LABELS, formatQuantity } from '#/lib/units'
 import type { Unit } from '#/lib/units'
 
 export const Route = createFileRoute('/grocery/$listId')({
@@ -175,7 +175,7 @@ function GroceryItemRow({
       >
         {displayName}
         <span className="text-muted-foreground ml-2 text-xs">
-          {item.quantity} {unitLabel}
+          {formatQuantity(item.quantity)} {unitLabel}
         </span>
       </Label>
       <button

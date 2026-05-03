@@ -18,6 +18,25 @@ export const UNIT_LABELS: Record<Unit, string> = {
   slice: 'slice',
 }
 
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b)
+}
+
+export function formatQuantity(n: number): string {
+  if (!isFinite(n) || isNaN(n)) return String(n)
+  const whole = Math.trunc(n)
+  const frac = n - whole
+  if (Math.abs(frac) < 0.001) return String(whole)
+  const numer16 = Math.round(frac * 16)
+  if (Math.abs(frac * 16 - numer16) < 0.005 && numer16 > 0 && numer16 < 16) {
+    const d = gcd(numer16, 16)
+    const num = numer16 / d
+    const den = 16 / d
+    return whole === 0 ? `${num}/${den}` : `${whole} ${num}/${den}`
+  }
+  return parseFloat(n.toFixed(2)).toString()
+}
+
 export function guessUnitFromOFF(quantityStr: string | undefined): Unit {
   if (!quantityStr) return 'g'
   const lower = quantityStr.toLowerCase()

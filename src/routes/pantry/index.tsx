@@ -173,7 +173,7 @@ function PantryPage() {
           if (!o) setInfoItem(null)
         }}
       >
-        <SheetContent side="bottom" className="pb-8">
+        <SheetContent side="bottom" className="inset-x-2 bottom-2 rounded-xl pb-8">
           <SheetHeader>
             <div className="flex items-center gap-3">
               {infoItem?.foodImageUrl && (
@@ -193,7 +193,7 @@ function PantryPage() {
               </div>
             </div>
           </SheetHeader>
-          <div className="mt-4">
+          <div className="mt-4 px-4">
             <FoodInfoPanel
               key={infoItem?.foodId ?? ''}
               barcode={infoItem?.foodBarcode}

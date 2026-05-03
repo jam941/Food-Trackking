@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import type { PantryItemWithFood } from '#/server/functions/pantry'
 import type { LocationKey } from '#/lib/pantry-filters'
-import { UNIT_LABELS } from '#/lib/units'
+import { UNIT_LABELS, formatQuantity } from '#/lib/units'
 import type { Unit } from '#/lib/units'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -60,7 +60,7 @@ function ItemRow({ item, onClick, onDelete }: ItemRowProps) {
             <p className="text-xs text-muted-foreground">{item.foodBrand}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            {item.quantity} {UNIT_LABELS[item.unit as Unit]}
+            {formatQuantity(item.quantity)} {UNIT_LABELS[item.unit as Unit]}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

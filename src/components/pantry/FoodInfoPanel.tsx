@@ -2,6 +2,7 @@ import { cn } from '#/lib/utils'
 import { Badge } from '#/components/ui/badge'
 import type { NutritionPer100g } from '#/db/schema'
 import FoodTagsEditor from '#/components/pantry/FoodTagsEditor'
+import { formatQuantity } from '#/lib/units'
 
 type Props = {
   barcode?: string | null
@@ -38,9 +39,9 @@ export default function FoodInfoPanel({ barcode, nutrition, className, foodId, t
 
   const auxBadges: string[] = []
   if (nutrition != null) {
-    if (nutrition.sugar !== undefined) auxBadges.push(`${nutrition.sugar}g sugar`)
-    if (nutrition.fiber !== undefined) auxBadges.push(`${nutrition.fiber}g fiber`)
-    if (nutrition.salt !== undefined) auxBadges.push(`${nutrition.salt}g salt`)
+    if (nutrition.sugar !== undefined) auxBadges.push(`${formatQuantity(nutrition.sugar)}g sugar`)
+    if (nutrition.fiber !== undefined) auxBadges.push(`${formatQuantity(nutrition.fiber)}g fiber`)
+    if (nutrition.salt !== undefined) auxBadges.push(`${formatQuantity(nutrition.salt)}g salt`)
   }
 
   return (
@@ -63,7 +64,7 @@ export default function FoodInfoPanel({ barcode, nutrition, className, foodId, t
 
           {nutrition.kcal !== undefined && (
             <p className="text-base font-semibold leading-none">
-              {nutrition.kcal}{' '}
+              {formatQuantity(nutrition.kcal)}{' '}
               <span className="text-xs font-normal text-muted-foreground">kcal</span>
             </p>
           )}
@@ -85,19 +86,19 @@ export default function FoodInfoPanel({ barcode, nutrition, className, foodId, t
                 {pKcal > 0 && (
                   <span>
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1 align-middle" />
-                    P {nutrition.protein}g <span className="text-muted-foreground">{pPct}%</span>
+                    P {formatQuantity(nutrition.protein ?? 0)}g <span className="text-muted-foreground">{pPct}%</span>
                   </span>
                 )}
                 {cKcal > 0 && (
                   <span>
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 mr-1 align-middle" />
-                    C {nutrition.carbs}g <span className="text-muted-foreground">{cPct}%</span>
+                    C {formatQuantity(nutrition.carbs ?? 0)}g <span className="text-muted-foreground">{cPct}%</span>
                   </span>
                 )}
                 {fKcal > 0 && (
                   <span>
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-500 mr-1 align-middle" />
-                    F {nutrition.fat}g <span className="text-muted-foreground">{fPct}%</span>
+                    F {formatQuantity(nutrition.fat ?? 0)}g <span className="text-muted-foreground">{fPct}%</span>
                   </span>
                 )}
               </div>
