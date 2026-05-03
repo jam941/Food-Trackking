@@ -22,7 +22,7 @@ import type { Unit } from '#/lib/units'
 import { findOrPrepareFoodForBarcode } from '#/server/functions/food'
 import { commitBulkAdd } from '#/server/functions/pantry'
 import { queryClient } from '#/integrations/tanstack-query/root-provider'
-import type { Food } from '#/db/schema'
+import type { Food, NutritionPer100g } from '#/db/schema'
 import UnpackConfigDialog from './UnpackConfigDialog'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +47,8 @@ type DraftRow = {
     brand?: string
     imageUrl?: string
     defaultUnit: Unit
+    barcode?: string
+    nutritionPer100g?: NutritionPer100g
     unpacksToFoodId?: string | null
     unpackCount?: number | null
   }
@@ -127,6 +129,8 @@ function reducer(state: SheetState, action: Action): SheetState {
           brand: food.brand ?? undefined,
           imageUrl: food.imageUrl ?? undefined,
           defaultUnit: food.defaultUnit,
+          barcode: food.barcode ?? undefined,
+          nutritionPer100g: food.nutritionPer100g ?? undefined,
           unpacksToFoodId: food.unpacksToFoodId,
           unpackCount: food.unpackCount,
         },
@@ -173,6 +177,8 @@ function reducer(state: SheetState, action: Action): SheetState {
           brand: draft.brand,
           imageUrl: draft.imageUrl,
           defaultUnit,
+          barcode: draft.barcode,
+          nutritionPer100g: draft.nutritionPer100g,
         },
         quantity: 1,
         unit: defaultUnit,
@@ -302,6 +308,7 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
   const [manualEntryBarcode, setManualEntryBarcode] = useState<string | null>(null)
   const [committing, setCommitting] = useState(false)
   const [unpackDialogKey, setUnpackDialogKey] = useState<string | null>(null)
+  const [expandedKey, setExpandedKey] = useState<string | null>(null)
 
   // Manual barcode input (always visible below camera)
   const [manualInputValue, setManualInputValue] = useState('')
@@ -640,8 +647,15 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
           )}
           {state.rows.map((row) => (
             <div key={row.key} className="border rounded-lg p-2 mb-2">
-              {/* Top row: image, name, brand, remove */}
-              <div className="flex items-center gap-2 mb-2">
+              {/* Top row: image, name, brand, expand toggle, remove */}
+              <div
+                className={`flex items-center gap-2 mb-2 ${row.source !== 'manual' ? 'cursor-pointer select-none' : ''}`}
+                onClick={() => {
+                  if (row.source !== 'manual') {
+                    setExpandedKey(expandedKey === row.key ? null : row.key)
+                  }
+                }}
+              >
                 {row.food.imageUrl && (
                   <img
                     src={row.food.imageUrl}
@@ -655,11 +669,19 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
                     <p className="text-xs text-muted-foreground truncate">{row.food.brand}</p>
                   )}
                 </div>
+                {row.source !== 'manual' && (
+                  <span className="text-muted-foreground text-xs flex-shrink-0">
+                    {expandedKey === row.key ? '▾' : '▸'}
+                  </span>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 w-7 p-0 ml-auto flex-shrink-0"
-                  onClick={() => dispatch({ type: 'REMOVE_ROW', key: row.key })}
+                  className="h-7 w-7 p-0 flex-shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    dispatch({ type: 'REMOVE_ROW', key: row.key })
+                  }}
                 >
                   ✕
                 </Button>
@@ -793,6 +815,68 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
                   </Button>
                 )}
               </div>
+
+              {/* Info sub-panel */}
+              {expandedKey === row.key && row.source !== 'manual' && (
+                <div className="mt-2 pt-2 border-t text-xs space-y-2">
+                  {row.food.barcode && (
+                    <p className="text-muted-foreground font-mono">{row.food.barcode}</p>
+                  )}
+                  {row.food.nutritionPer100g ? (
+                    <div>
+                      <p className="font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                        Per 100g
+                      </p>
+                      <div className="space-y-0.5">
+                        {row.food.nutritionPer100g.kcal != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Energy</span>
+                            <span>{row.food.nutritionPer100g.kcal} kcal</span>
+                          </div>
+                        )}
+                        {row.food.nutritionPer100g.protein != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Protein</span>
+                            <span>{row.food.nutritionPer100g.protein}g</span>
+                          </div>
+                        )}
+                        {row.food.nutritionPer100g.carbs != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Carbs</span>
+                            <span>{row.food.nutritionPer100g.carbs}g</span>
+                          </div>
+                        )}
+                        {row.food.nutritionPer100g.fat != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fat</span>
+                            <span>{row.food.nutritionPer100g.fat}g</span>
+                          </div>
+                        )}
+                        {row.food.nutritionPer100g.sugar != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Sugar</span>
+                            <span>{row.food.nutritionPer100g.sugar}g</span>
+                          </div>
+                        )}
+                        {row.food.nutritionPer100g.fiber != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fiber</span>
+                            <span>{row.food.nutritionPer100g.fiber}g</span>
+                          </div>
+                        )}
+                        {row.food.nutritionPer100g.salt != null && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Salt</span>
+                            <span>{row.food.nutritionPer100g.salt}g</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No nutrition data</p>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
