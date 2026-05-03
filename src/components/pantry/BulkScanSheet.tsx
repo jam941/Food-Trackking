@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { createBarcodeScanner } from '#/lib/scanner'
+import { Switch } from '#/components/ui/switch'
 import { UNITS, UNIT_LABELS } from '#/lib/units'
 import type { Unit } from '#/lib/units'
 import { findOrPrepareFoodForBarcode } from '#/server/functions/food'
@@ -43,6 +44,7 @@ type DraftRow = {
     externalRef?: string
   }
   unpack: boolean
+  hasExpiry: boolean
   food: {
     name: string
     brand?: string
@@ -98,6 +100,7 @@ type Action =
   | { type: 'EDIT_LOCATION'; key: string; location: string }
   | { type: 'EDIT_EXPIRY'; key: string; expiresAt: string | undefined }
   | { type: 'TOGGLE_UNPACK'; key: string }
+  | { type: 'TOGGLE_HAS_EXPIRY'; key: string }
   | { type: 'UPDATE_UNPACK_CONFIG'; foodId: string; unpacksToFoodId: string; unpackCount: number }
   | { type: 'SPLIT_ROW'; key: string }
   | { type: 'REMOVE_ROW'; key: string }
@@ -125,6 +128,7 @@ function reducer(state: SheetState, action: Action): SheetState {
         source: 'off-existing',
         foodId: food.id,
         unpack: false,
+        hasExpiry: false,
         food: {
           name: food.name,
           brand: food.brand ?? undefined,
@@ -162,6 +166,7 @@ function reducer(state: SheetState, action: Action): SheetState {
         key: action.key,
         source: 'off-new',
         foodId: null,
+        hasExpiry: false,
         newFoodDraft: {
           name: draft.name,
           brand: draft.brand,
@@ -194,6 +199,7 @@ function reducer(state: SheetState, action: Action): SheetState {
         key: action.key,
         source: 'manual',
         foodId: null,
+        hasExpiry: false,
         newFoodDraft: {
           name: action.name,
           brand: action.brand,
@@ -256,6 +262,16 @@ function reducer(state: SheetState, action: Action): SheetState {
         ...state,
         rows: state.rows.map((r) =>
           r.key === action.key ? { ...r, unpack: !r.unpack } : r,
+        ),
+      }
+
+    case 'TOGGLE_HAS_EXPIRY':
+      return {
+        ...state,
+        rows: state.rows.map((r) =>
+          r.key === action.key
+            ? { ...r, hasExpiry: !r.hasExpiry, expiresAt: r.hasExpiry ? undefined : r.expiresAt }
+            : r,
         ),
       }
 
@@ -688,127 +704,153 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
                 </Button>
               </div>
 
-              {/* Bottom row: qty, unit, location, unpack, split */}
-              <div className="flex flex-wrap items-center gap-1.5">
+              {/* Bottom row: qty, unit, location, expiry, unpack, split */}
+              <div className="flex flex-wrap items-end gap-2">
                 {/* Quantity stepper */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 w-7 p-0"
-                  onClick={() =>
-                    dispatch({
-                      type: 'EDIT_QTY',
-                      key: row.key,
-                      quantity: Math.max(1, row.quantity - 1),
-                    })
-                  }
-                >
-                  −
-                </Button>
-                <Input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={row.quantity}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value)
-                    if (v > 0) dispatch({ type: 'EDIT_QTY', key: row.key, quantity: v })
-                  }}
-                  className="w-16 h-7 text-center px-1"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 w-7 p-0"
-                  onClick={() =>
-                    dispatch({ type: 'EDIT_QTY', key: row.key, quantity: row.quantity + 1 })
-                  }
-                >
-                  +
-                </Button>
-
-                {/* Unit select */}
-                <Select
-                  value={row.unit}
-                  onValueChange={(v) =>
-                    dispatch({ type: 'EDIT_UNIT', key: row.key, unit: v as Unit })
-                  }
-                >
-                  <SelectTrigger className="h-7 text-xs w-auto min-w-[4rem]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNITS.map((u) => (
-                      <SelectItem key={u} value={u} className="text-xs">
-                        {UNIT_LABELS[u]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Location select */}
-                <Select
-                  value={row.location}
-                  onValueChange={(v) =>
-                    dispatch({ type: 'EDIT_LOCATION', key: row.key, location: v })
-                  }
-                >
-                  <SelectTrigger className="h-7 text-xs w-auto min-w-[4.5rem]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pantry" className="text-xs">Pantry</SelectItem>
-                    <SelectItem value="fridge" className="text-xs">Fridge</SelectItem>
-                    <SelectItem value="freezer" className="text-xs">Freezer</SelectItem>
-                    <SelectItem value="other" className="text-xs">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Expiry date input */}
-                <Input
-                  type="date"
-                  className="h-7 text-xs w-32"
-                  value={row.expiresAt?.split('T')[0] ?? ''}
-                  onChange={(e) =>
-                    dispatch({
-                      type: 'EDIT_EXPIRY',
-                      key: row.key,
-                      expiresAt: e.target.value ? `${e.target.value}T00:00:00.000Z` : undefined,
-                    })
-                  }
-                />
-
-                {/* Unpack toggle — existing food with unpack mapping already set */}
-                {row.food.unpacksToFoodId != null && (
-                    <Button
-                      size="sm"
-                      variant={row.unpack ? 'default' : 'outline'}
-                      className="h-7 text-xs px-2"
-                      onClick={() => dispatch({ type: 'TOGGLE_UNPACK', key: row.key })}
-                    >
-                      Unpack ({row.food.unpackCount}×)
-                    </Button>
-                  )}
-
-                {/* Unpack config button — existing food with no mapping yet */}
-                {row.source === 'off-existing' &&
-                  row.food.unpacksToFoodId == null && (
+                <div className="space-y-0.5">
+                  <Label className="text-xs text-muted-foreground">Qty</Label>
+                  <div className="flex items-center gap-1">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 text-xs px-2"
-                      onClick={() => setUnpackDialogKey(row.key)}
+                      className="h-7 w-7 p-0"
+                      onClick={() =>
+                        dispatch({
+                          type: 'EDIT_QTY',
+                          key: row.key,
+                          quantity: Math.max(1, row.quantity - 1),
+                        })
+                      }
                     >
-                      Unpack…
+                      −
                     </Button>
-                  )}
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={row.quantity}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value)
+                        if (v > 0) dispatch({ type: 'EDIT_QTY', key: row.key, quantity: v })
+                      }}
+                      className="w-14 h-7 text-center px-1"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      onClick={() =>
+                        dispatch({ type: 'EDIT_QTY', key: row.key, quantity: row.quantity + 1 })
+                      }
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Unit select */}
+                <div className="space-y-0.5">
+                  <Label className="text-xs text-muted-foreground">Unit</Label>
+                  <Select
+                    value={row.unit}
+                    onValueChange={(v) =>
+                      dispatch({ type: 'EDIT_UNIT', key: row.key, unit: v as Unit })
+                    }
+                  >
+                    <SelectTrigger className="h-7 text-xs w-auto min-w-[4rem]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map((u) => (
+                        <SelectItem key={u} value={u} className="text-xs">
+                          {UNIT_LABELS[u]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Location select */}
+                <div className="space-y-0.5">
+                  <Label className="text-xs text-muted-foreground">Location</Label>
+                  <Select
+                    value={row.location}
+                    onValueChange={(v) =>
+                      dispatch({ type: 'EDIT_LOCATION', key: row.key, location: v })
+                    }
+                  >
+                    <SelectTrigger className="h-7 text-xs w-auto min-w-[4.5rem]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pantry" className="text-xs">Pantry</SelectItem>
+                      <SelectItem value="fridge" className="text-xs">Fridge</SelectItem>
+                      <SelectItem value="freezer" className="text-xs">Freezer</SelectItem>
+                      <SelectItem value="other" className="text-xs">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Expiry toggle + date */}
+                <div className="space-y-0.5">
+                  <Label className="text-xs text-muted-foreground">Expiry</Label>
+                  <div className="flex items-center gap-1.5 h-7">
+                    <Switch
+                      size="sm"
+                      checked={row.hasExpiry}
+                      onCheckedChange={() =>
+                        dispatch({ type: 'TOGGLE_HAS_EXPIRY', key: row.key })
+                      }
+                    />
+                    {row.hasExpiry && (
+                      <Input
+                        type="date"
+                        className="h-7 text-xs w-32"
+                        value={row.expiresAt?.split('T')[0] ?? ''}
+                        onChange={(e) =>
+                          dispatch({
+                            type: 'EDIT_EXPIRY',
+                            key: row.key,
+                            expiresAt: e.target.value
+                              ? `${e.target.value}T00:00:00.000Z`
+                              : undefined,
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Unpack toggle — existing food with unpack mapping already set */}
+                {row.food.unpacksToFoodId != null && (
+                  <Button
+                    size="sm"
+                    variant={row.unpack ? 'default' : 'outline'}
+                    className="h-7 text-xs px-2 self-end"
+                    onClick={() => dispatch({ type: 'TOGGLE_UNPACK', key: row.key })}
+                  >
+                    Unpack ({row.food.unpackCount}×)
+                  </Button>
+                )}
+
+                {/* Unpack config button — existing food with no mapping yet */}
+                {row.source === 'off-existing' && row.food.unpacksToFoodId == null && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs px-2 self-end"
+                    onClick={() => setUnpackDialogKey(row.key)}
+                  >
+                    Unpack…
+                  </Button>
+                )}
 
                 {/* Split button */}
                 {!row.noMerge && (
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 text-xs px-2 text-muted-foreground"
+                    className="h-7 text-xs px-2 text-muted-foreground self-end"
                     onClick={() => dispatch({ type: 'SPLIT_ROW', key: row.key })}
                     title="Split into separate row (won't merge on next scan)"
                   >
