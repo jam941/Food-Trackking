@@ -7,29 +7,33 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 
-type FoodTagsEditorProps = {
-  foodId: string
-  tags: string[]
-}
+type FoodTagsEditorProps =
+  | { mode?: 'server'; foodId: string; tags: string[] }
+  | { mode: 'controlled'; tags: string[]; onChange: (next: string[]) => void }
 
-export default function FoodTagsEditor({ foodId, tags }: FoodTagsEditorProps) {
-  const [localTags, setLocalTags] = useState<string[]>(tags)
+export default function FoodTagsEditor(props: FoodTagsEditorProps) {
+  const isControlled = props.mode === 'controlled'
+  const [serverTags, setServerTags] = useState<string[]>(isControlled ? [] : (props as { tags: string[] }).tags)
   const [inputValue, setInputValue] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const currentTags = isControlled ? props.tags : serverTags
+
   async function saveTags(next: string[]) {
-    const prev = localTags
-    setLocalTags(next)
+    if (isControlled) {
+      props.onChange(next)
+      return
+    }
+    const { foodId } = props as { foodId: string; tags: string[] }
+    const prev = serverTags
+    setServerTags(next)
     setSaving(true)
     try {
       await updateFoodTags({ data: { id: foodId, tags: next } })
-      // Invalidate the pantry collection so updated tags are reflected in the
-      // virtualised list without a full page reload. The pantry collection is
-      // registered with queryKey ['pantry'] in src/db-collections/index.ts.
       queryClient.invalidateQueries({ queryKey: ['pantry'] })
     } catch {
       toast.error('Failed to update tags')
-      setLocalTags(prev)
+      setServerTags(prev)
     } finally {
       setSaving(false)
     }
@@ -38,7 +42,7 @@ export default function FoodTagsEditor({ foodId, tags }: FoodTagsEditorProps) {
   function handleAdd() {
     const normalized = normalizeTag(inputValue)
     if (!normalized) return
-    const alreadyExists = localTags.some(
+    const alreadyExists = currentTags.some(
       (t) => t.toLowerCase() === normalized.toLowerCase(),
     )
     if (alreadyExists) {
@@ -46,11 +50,11 @@ export default function FoodTagsEditor({ foodId, tags }: FoodTagsEditorProps) {
       return
     }
     setInputValue('')
-    void saveTags([...localTags, normalized])
+    void saveTags([...currentTags, normalized])
   }
 
   function handleRemove(tag: string) {
-    void saveTags(localTags.filter((t) => t !== tag))
+    void saveTags(currentTags.filter((t) => t !== tag))
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -62,11 +66,11 @@ export default function FoodTagsEditor({ foodId, tags }: FoodTagsEditorProps) {
 
   return (
     <div>
-      {localTags.length === 0 && !inputValue ? (
+      {currentTags.length === 0 && !inputValue ? (
         <p className="text-xs text-muted-foreground mb-2">No tags</p>
       ) : (
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {localTags.map((tag) => (
+          {currentTags.map((tag) => (
             <Badge key={tag} variant="secondary" className="gap-1">
               {tag}
               <button

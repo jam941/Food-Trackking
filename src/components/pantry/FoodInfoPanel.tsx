@@ -10,13 +10,14 @@ type Props = {
   className?: string
   foodId?: string
   tags?: string[]
+  onTagsChange?: (next: string[]) => void
 }
 
-export default function FoodInfoPanel({ barcode, nutrition, className, foodId, tags }: Props) {
+export default function FoodInfoPanel({ barcode, nutrition, className, foodId, tags, onTagsChange }: Props) {
   const hasNutrition =
     nutrition != null &&
     Object.keys(nutrition).length > 0
-  const hasContent = barcode || hasNutrition || !!foodId
+  const hasContent = barcode || hasNutrition || !!foodId || (tags !== undefined && !!onTagsChange)
 
   if (!hasContent) {
     return (
@@ -46,9 +47,11 @@ export default function FoodInfoPanel({ barcode, nutrition, className, foodId, t
 
   return (
     <div className={cn('space-y-2', className)}>
-      {foodId && tags && (
+      {tags && (foodId || onTagsChange) && (
         <div className="mb-3">
-          <FoodTagsEditor foodId={foodId} tags={tags} />
+          {foodId
+            ? <FoodTagsEditor foodId={foodId} tags={tags} />
+            : <FoodTagsEditor mode="controlled" tags={tags} onChange={onTagsChange!} />}
         </div>
       )}
 

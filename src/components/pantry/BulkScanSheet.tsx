@@ -42,6 +42,7 @@ type DraftRow = {
     nutritionPer100g?: Record<string, number>
     externalSource?: string
     externalRef?: string
+    tags: string[]
   }
   unpack: boolean
   hasExpiry: boolean
@@ -91,9 +92,11 @@ type Action =
         nutritionPer100g?: Record<string, number>
         externalSource?: string
         externalRef?: string
+        tags?: string[]
       }
     }
   | { type: 'ADD_MANUAL_ROW'; key: string; name: string; brand?: string; barcode: string; defaultUnit: Unit }
+  | { type: 'EDIT_TAGS'; key: string; tags: string[] }
   | { type: 'SET_PREVIEW'; data: PreviewData | null }
   | { type: 'EDIT_QTY'; key: string; quantity: number }
   | { type: 'EDIT_UNIT'; key: string; unit: Unit }
@@ -176,6 +179,7 @@ function reducer(state: SheetState, action: Action): SheetState {
           nutritionPer100g: draft.nutritionPer100g,
           externalSource: draft.externalSource,
           externalRef: draft.externalRef,
+          tags: draft.tags ?? [],
         },
         unpack: false,
         food: {
@@ -205,6 +209,7 @@ function reducer(state: SheetState, action: Action): SheetState {
           brand: action.brand,
           barcode: action.barcode,
           defaultUnit: action.defaultUnit,
+          tags: [],
         },
         unpack: false,
         food: {
@@ -236,6 +241,16 @@ function reducer(state: SheetState, action: Action): SheetState {
         ...state,
         rows: state.rows.map((r) =>
           r.key === action.key ? { ...r, unit: action.unit } : r,
+        ),
+      }
+
+    case 'EDIT_TAGS':
+      return {
+        ...state,
+        rows: state.rows.map((r) =>
+          r.key === action.key && r.newFoodDraft
+            ? { ...r, newFoodDraft: { ...r.newFoodDraft, tags: action.tags } }
+            : r,
         ),
       }
 
@@ -384,6 +399,7 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
           nutritionPer100g?: Record<string, number>
           externalSource?: string
           externalRef?: string
+          tags?: string[]
         }
         dispatch({ type: 'SCAN_RESOLVED_NEW', key: crypto.randomUUID(), draft })
         showPreview({
@@ -666,11 +682,9 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
             <div key={row.key} className="border rounded-lg p-2 mb-2">
               {/* Top row: image, name, brand, expand toggle, remove */}
               <div
-                className={`flex items-center gap-2 mb-2 ${row.source !== 'manual' ? 'cursor-pointer select-none' : ''}`}
+                className="flex items-center gap-2 mb-2 cursor-pointer select-none"
                 onClick={() => {
-                  if (row.source !== 'manual') {
-                    setExpandedKey(expandedKey === row.key ? null : row.key)
-                  }
+                  setExpandedKey(expandedKey === row.key ? null : row.key)
                 }}
               >
                 {row.food.imageUrl && (
@@ -686,11 +700,9 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
                     <p className="text-xs text-muted-foreground truncate">{row.food.brand}</p>
                   )}
                 </div>
-                {row.source !== 'manual' && (
-                  <span className="text-muted-foreground text-xs flex-shrink-0">
-                    {expandedKey === row.key ? '▾' : '▸'}
-                  </span>
-                )}
+                <span className="text-muted-foreground text-xs flex-shrink-0">
+                  {expandedKey === row.key ? '▾' : '▸'}
+                </span>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -860,11 +872,17 @@ export default function BulkScanSheet({ open, onOpenChange }: Props) {
               </div>
 
               {/* Info sub-panel */}
-              {expandedKey === row.key && row.source !== 'manual' && (
+              {expandedKey === row.key && (
                 <FoodInfoPanel
                   className="mt-2 pt-2 border-t"
                   barcode={row.food.barcode}
                   nutrition={row.food.nutritionPer100g}
+                  tags={row.source !== 'off-existing' ? row.newFoodDraft?.tags : undefined}
+                  onTagsChange={
+                    row.source !== 'off-existing'
+                      ? (next) => dispatch({ type: 'EDIT_TAGS', key: row.key, tags: next })
+                      : undefined
+                  }
                 />
               )}
             </div>
